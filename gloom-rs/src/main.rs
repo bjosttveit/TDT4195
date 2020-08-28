@@ -105,50 +105,51 @@ fn main() {
         }
 
         // == // Set up your VAO here
-        let vao1: u32;
-        unsafe {
-            let coordinates: Vec<f32> = vec![
-                 0.0,    0.0,    -10.0,
-                 0.0,    2.0,    -10.0,
-                 1.0,    1.732,  -10.0,
-                 1.732,  1.0,    -10.0,
-                 2.0,    0.0,    -10.0,
-                 1.732, -1.0,    -10.0,
-                 1.0,   -1.732,  -10.0,
-                 0.0,   -2.0,    -10.0,
-                -1.0,   -1.732,  -10.0,
-                -1.732, -1.0,    -10.0,
-                -2.0,    0.0,    -10.0,
-                -1.732,  1.0,    -10.0,
-                -1.0,   -1.732,  -10.0,
+        let coordinates: Vec<f32> = vec![
+            0.0,    0.0,    0.0,
+            0.0,    0.5,    0.0,
+            0.25,   0.433,  0.0,
+            0.433,  0.25,   0.0,
+            0.5,    0.0,    0.0,
+            0.433, -0.25,   0.0,
+            0.25,  -0.433,  0.0,
+            0.0,   -0.5,    0.0,
+           -0.25,  -0.433,  0.0,
+           -0.433, -0.25,   0.0,
+           -0.5,    0.0,    0.0,
+           -0.433,  0.25,   0.0,
+           -0.25,  -0.433,  0.0,
 
-            ];
-            let indicies: Vec<u32> = vec![
-                0,  1,  2,
-                0,  2,  3,
-                0,  3,  4,
-                0,  4,  5,
-                0,  5,  6,
-                0,  6,  7,
-                0,  7,  8,
-                0,  8,  9,
-                0,  9,  10,
-                0,  10, 11,
-                0,  11, 12,
-                0,  12, 13,
-            ];
+       ];
+       let indicies: Vec<u32> = vec![
+           0, 2,  1,  
+           0, 3,  2,  
+           0, 4,  3,  
+           0, 5,  4,  
+           0, 6,  5,  
+           0, 7,  6,  
+           0, 8,  7,  
+           0, 9,  8,
+           0, 10, 9,  
+           0, 11, 10, 
+           0, 12, 11, 
+           0, 1,  12,
+       ];
 
-            vao1 = create_vao(&coordinates, &indicies);
-        }
+        let vao: u32 = unsafe { create_vao(&coordinates, &indicies) };
 
         // Basic usage of shader helper
         // The code below returns a shader object, which contains the field .program_id
         // The snippet is not enough to do the assignment, and will need to be modified (outside of just using the correct path)
-        unsafe {
+        let shaders = unsafe {
             shader::ShaderBuilder::new()
-                .attach_file("./shaders/simple.frag")
                 .attach_file("./shaders/simple.vert")
-                .link();
+                .attach_file("./shaders/simple.frag")
+                .link()
+        };
+
+        unsafe {
+            gl::UseProgram(shaders.program_id);
         }
 
         // Used to demonstrate keyboard handling -- feel free to remove
@@ -184,7 +185,7 @@ fn main() {
                 gl::Clear(gl::COLOR_BUFFER_BIT);
 
                 // Issue the necessary commands to draw your scene here
-                gl::BindVertexArray(vao1);
+                gl::BindVertexArray(vao);
                 gl::DrawElements(gl::TRIANGLES, 36, gl::UNSIGNED_INT, ptr::null());
             }
 
