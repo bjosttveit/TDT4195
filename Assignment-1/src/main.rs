@@ -224,12 +224,12 @@ fn main() {
                 //gl::DrawElements(gl::LINE_LOOP, 3, gl::UNSIGNED_INT, ptr::null());
 
                 //==============TASK 2b==============
-                //gl::BindVertexArray(task2b_vao);
-                //gl::DrawElements(gl::TRIANGLES, 3, gl::UNSIGNED_INT, ptr::null());
+                gl::BindVertexArray(task2b_vao);
+                gl::DrawElements(gl::TRIANGLES, 3, gl::UNSIGNED_INT, ptr::null());
 
                 //==============TASK 2d==============
-                gl::BindVertexArray(task2d_vao);
-                gl::DrawElements(gl::TRIANGLES, 3, gl::UNSIGNED_INT, ptr::null());
+                //gl::BindVertexArray(task2d_vao);
+                //gl::DrawElements(gl::TRIANGLES, 3, gl::UNSIGNED_INT, ptr::null());
             }
 
             context.swap_buffers().unwrap();
