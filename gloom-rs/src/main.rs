@@ -15,7 +15,7 @@ use glutin::event::{
 };
 use glutin::event_loop::ControlFlow;
 
-const SCREEN_W: u32 = 800;
+const SCREEN_W: u32 = 600;
 const SCREEN_H: u32 = 600;
 
 // Helper functions to make interacting with OpenGL a little bit prettier. You will need these!
@@ -40,7 +40,7 @@ fn offset<T>(n: u32) -> *const c_void {
 }
 
 // == // Modify and complete the function below for the first task
-unsafe fn create_vao(coordinates: &Vec<f32>, indicies: &Vec<u32>) -> u32 {
+unsafe fn create_vao(vertices: &Vec<f32>, indicies: &Vec<u32>) -> u32 {
     let mut array_id: u32 = 0;
     gl::GenVertexArrays(1, &mut array_id);
     gl::BindVertexArray(array_id);
@@ -50,8 +50,8 @@ unsafe fn create_vao(coordinates: &Vec<f32>, indicies: &Vec<u32>) -> u32 {
     gl::BindBuffer(gl::ARRAY_BUFFER, coordinate_buffer_id);
     gl::BufferData(
         gl::ARRAY_BUFFER,
-        coordinates.len() as isize,
-        coordinates.as_ptr() as *const GLvoid,
+        byte_size_of_array(vertices),
+        pointer_to_array(vertices),
         gl::STATIC_DRAW,
     );
     gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 0, std::ptr::null());
@@ -62,8 +62,8 @@ unsafe fn create_vao(coordinates: &Vec<f32>, indicies: &Vec<u32>) -> u32 {
     gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, index_buffer_id);
     gl::BufferData(
         gl::ELEMENT_ARRAY_BUFFER,
-        indicies.len() as isize,
-        indicies.as_ptr() as *const GLvoid,
+        byte_size_of_array(indicies),
+        pointer_to_array(indicies),
         gl::STATIC_DRAW,
     );
 
@@ -105,7 +105,7 @@ fn main() {
         }
 
         // == // Set up your VAO here
-        let coordinates: Vec<f32> = vec![
+        let vertices: Vec<f32> = vec![
             0.0,    0.0,    0.0,
             0.0,    0.5,    0.0,
             0.25,   0.433,  0.0,
@@ -118,7 +118,7 @@ fn main() {
            -0.433, -0.25,   0.0,
            -0.5,    0.0,    0.0,
            -0.433,  0.25,   0.0,
-           -0.25,  -0.433,  0.0,
+           -0.25,   0.433,  0.0,
 
        ];
        let indicies: Vec<u32> = vec![
@@ -136,7 +136,7 @@ fn main() {
            0, 1,  12,
        ];
 
-        let vao: u32 = unsafe { create_vao(&coordinates, &indicies) };
+        let vao: u32 = unsafe { create_vao(&vertices, &indicies) };
 
         // Basic usage of shader helper
         // The code below returns a shader object, which contains the field .program_id
