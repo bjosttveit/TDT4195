@@ -39,7 +39,7 @@ fn offset<T>(n: u32) -> *const c_void {
     (n * mem::size_of::<T>() as u32) as *const T as *const c_void
 }
 
-//==============TASK 1a==============
+
 unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>) -> u32 {
     let mut array_id: u32 = 0;
     gl::GenVertexArrays(1, &mut array_id);
@@ -106,70 +106,8 @@ fn main() {
 
         // == // Set up your VAO here
         
-        //==============TASK 1c==============
-        let task1_vertices: Vec<f32> = vec![
-            0.0,    0.0,    0.0,
-            0.0,    0.5,    0.0,
-            0.25,   0.433,  0.0,
-            0.433,  0.25,   0.0,
-            0.5,    0.0,    0.0,
-            0.433, -0.25,   0.0,
-            0.25,  -0.433,  0.0,
-            0.0,   -0.5,    0.0,
-           -0.25,  -0.433,  0.0,
-           -0.433, -0.25,   0.0,
-           -0.5,    0.0,    0.0,
-           -0.433,  0.25,   0.0,
-           -0.25,   0.433,  0.0,
-        ];
-       let task1_indices: Vec<u32> = vec![
-           0, 2,  1,  
-           0, 4,  3,  
-           0, 6,  5,  
-           0, 8,  7,  
-           0, 10, 9,  
-           0, 12, 11, 
-        ];
-        let task1_vao: u32 = unsafe { create_vao(&task1_vertices, &task1_indices) };
 
-        //==============TASK 2a==============
-        let task2a_vertices: Vec<f32> = vec![
-            0.6,  -0.8, -1.2,
-            0.0,   0.4,  0.0,
-            -0.8, -0.2,  1.2,
-        ];
-        let task2a_indices: Vec<u32> = vec![
-            0, 1, 2,
-        ];
-        let task2a_vao: u32 = unsafe { create_vao(&task2a_vertices, &task2a_indices) };
-
-        //==============TASK 2b==============
-        let task2b_vertices: Vec<f32> = vec![
-             0.0,  0.8, 0.0,
-            -0.8, -0.8, 0.0,
-             0.8, -0.8, 0.0,
-        ];
-        let task2b_indices: Vec<u32> = vec![
-            //Counterclockwise
-            0, 1, 2,
-
-            //Clockwise
-            //0, 2, 1,
-        ];
-        let task2b_vao: u32 = unsafe { create_vao(&task2b_vertices, &task2b_indices) };
-
-        //==============TASK 2d==============
-        let task2d_vertices: Vec<f32> = vec![
-            -0.8,  0.8, 0.0,
-            -0.8, -0.8, 0.0,
-             0.8, -0.8, 0.0,
-        ];
-        let task2d_indices: Vec<u32> = vec![
-            0, 1, 2,
-        ];
-        let task2d_vao: u32 = unsafe { create_vao(&task2d_vertices, &task2d_indices) };
-
-        //==============TASK 1b==============
+        
         let shader = unsafe {
             shader::ShaderBuilder::new()
                 .attach_file("./shaders/simple.vert")
@@ -215,21 +153,7 @@ fn main() {
 
                 // Issue the necessary commands to draw your scene here
 
-                //==============TASK 1c==============
-                //gl::BindVertexArray(task1_vao);
-                //gl::DrawElements(gl::TRIANGLES, 18, gl::UNSIGNED_INT, ptr::null());
 
-                //==============TASK 2a==============
-                //gl::BindVertexArray(task2a_vao);
-                //gl::DrawElements(gl::LINE_LOOP, 3, gl::UNSIGNED_INT, ptr::null());
-
-                //==============TASK 2b==============
-                gl::BindVertexArray(task2b_vao);
-                gl::DrawElements(gl::TRIANGLES, 3, gl::UNSIGNED_INT, ptr::null());
-
-                //==============TASK 2d==============
-                //gl::BindVertexArray(task2d_vao);
-                //gl::DrawElements(gl::TRIANGLES, 3, gl::UNSIGNED_INT, ptr::null());
             }
 
             context.swap_buffers().unwrap();
