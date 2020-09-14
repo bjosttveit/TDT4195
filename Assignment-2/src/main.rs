@@ -2,7 +2,7 @@ extern crate nalgebra_glm as glm;
 use gl::types::*;
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
-use std::{mem, os::raw::c_void, ptr, str};
+use std::{mem, os::raw::c_void, ptr, str, ffi::CString};
 
 mod shader;
 mod util;
@@ -195,6 +195,30 @@ fn main() {
         ];
         let task2_vao: u32 = unsafe { create_vao(&task2_vertices, &task2_indices, &task2_color_vertices) };
 
+        //==============TASK 3==============
+        let task3_vertices: Vec<f32> = vec![
+                -0.5, -0.5, 0.0,
+                 0.5, -0.5, 0.0,
+                 0.0,  0.5, 0.0,
+        ];
+        let task3_indices: Vec<u32> = vec![
+            0, 1, 2,
+            
+        ];
+        let task3_color_vertices: Vec<f32> = vec![
+            1.0, 0.0, 0.0, 1.0,
+            0.0, 1.0, 0.0, 1.0,
+            0.0, 0.0, 1.0, 1.0,
+        ];
+        let task3_vao: u32 = unsafe { create_vao(&task3_vertices, &task3_indices, &task3_color_vertices) };
+
+        let task4_transform: Vec<f32> = vec![
+            1.0, 0.0, 0.0, 0.0, 
+            0.0, 1.0, 0.0, 0.0, 
+            0.0, 0.0, 1.0, 0.0, 
+            0.0, 0.0, 0.0, 1.0,
+        ];
+
         
         let shader = unsafe {
             shader::ShaderBuilder::new()
@@ -219,6 +243,8 @@ fn main() {
             let delta_time = now.duration_since(last_frame_time).as_secs_f32();
             last_frame_time = now;
 
+            
+
             // Handle keyboard input
             if let Ok(keys) = pressed_keys.lock() {
                 for key in keys.iter() {
@@ -236,6 +262,12 @@ fn main() {
             }
 
             unsafe {
+                let value = gl::GetUniformLocation(shader.program_id, CString::new("value").expect("Convert to c-string").as_ptr());
+                gl::Uniform1f(value, elapsed.sin());
+
+                let transformation = gl::GetUniformLocation(shader.program_id, CString::new("transformation").expect("Convert to c-string").as_ptr());
+                gl::UniformMatrix4fv(transformation, 1, 0, task4_transform.as_ptr());
+
                 gl::ClearColor(0.163, 0.163, 0.163, 1.0);
                 gl::Clear(gl::COLOR_BUFFER_BIT);
                 gl::Clear(gl::DEPTH_BUFFER_BIT);
@@ -247,9 +279,12 @@ fn main() {
                 //gl::DrawElements(gl::TRIANGLES, 18, gl::UNSIGNED_INT, ptr::null());
 
                 //==============TASK 2==============
-                gl::BindVertexArray(task2_vao);
-                gl::DrawElements(gl::TRIANGLES, 9, gl::UNSIGNED_INT, ptr::null());
+                //gl::BindVertexArray(task2_vao);
+                //gl::DrawElements(gl::TRIANGLES, 9, gl::UNSIGNED_INT, ptr::null());
 
+                //==============TASK 3==============
+                gl::BindVertexArray(task3_vao);
+                gl::DrawElements(gl::TRIANGLES, 3, gl::UNSIGNED_INT, ptr::null());
             }
 
             context.swap_buffers().unwrap();
