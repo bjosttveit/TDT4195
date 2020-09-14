@@ -39,8 +39,8 @@ fn offset<T>(n: u32) -> *const c_void {
     (n * mem::size_of::<T>() as u32) as *const T as *const c_void
 }
 
-
-unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>) -> u32 {
+//==============TASK 1ai==============
+unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>, vertex_colors: &Vec<f32>) -> u32 {
     let mut array_id: u32 = 0;
     gl::GenVertexArrays(1, &mut array_id);
     gl::BindVertexArray(array_id);
@@ -66,6 +66,18 @@ unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>) -> u32 {
         pointer_to_array(indices),
         gl::STATIC_DRAW,
     );
+
+    let mut vertex_color_buffer_id: u32 = 0;
+    gl::GenBuffers(1, &mut vertex_color_buffer_id);
+    gl::BindBuffer(gl::ARRAY_BUFFER, vertex_color_buffer_id);
+    gl::BufferData(
+        gl::ARRAY_BUFFER,
+        byte_size_of_array(vertex_colors),
+        pointer_to_array(vertex_colors),
+        gl::STATIC_DRAW,
+    );
+    gl::VertexAttribPointer(1, 4, gl::FLOAT, gl::FALSE, 0, std::ptr::null());
+    gl::EnableVertexAttribArray(1);
 
     return array_id;
 }
@@ -96,6 +108,7 @@ fn main() {
 
         // Set up openGL
         unsafe {
+            gl::Enable(gl::DEPTH_TEST);
             gl::Enable(gl::CULL_FACE);
             gl::Disable(gl::MULTISAMPLE);
             gl::Enable(gl::BLEND);
@@ -106,6 +119,81 @@ fn main() {
 
         // == // Set up your VAO here
         
+        //==============TASK 1b==============
+        let task1_vertices: Vec<f32> = vec![
+            0.0,     0.0,    0.0,
+            0.0,     0.5,    0.0,
+            0.25,    0.433,  0.0,
+            0.433,   0.25,   0.0,
+            0.5,     0.0,    0.0,
+            0.433,  -0.25,   0.0,
+            0.25,   -0.433,  0.0,
+            0.0,    -0.5,    0.0,
+            -0.25,  -0.433,  0.0,
+            -0.433, -0.25,   0.0,
+            -0.5,    0.0,    0.0,
+            -0.433,  0.25,   0.0,
+            -0.25,   0.433,  0.0,
+        ];
+        let task1_indices: Vec<u32> = vec![
+            0, 2,  1,  
+            0, 4,  3,  
+            0, 6,  5,  
+            0, 8,  7,  
+            0, 10, 9,  
+            0, 12, 11, 
+        ];
+        let task1_color_vertices: Vec<f32> = vec![
+            1.0, 1.0, 1.0, 1.0, 
+            1.0, 0.0, 1.0, 1.0, 
+            1.0, 1.0, 0.0, 1.0, 
+            0.0, 1.0, 1.0, 1.0, 
+            1.0, 0.0, 0.0, 1.0, 
+            0.0, 1.0, 0.0, 1.0, 
+            0.0, 0.0, 1.0, 1.0, 
+            1.0, 0.0, 1.0, 1.0, 
+            1.0, 1.0, 0.0, 1.0, 
+            0.0, 1.0, 1.0, 1.0, 
+            1.0, 0.0, 0.0, 1.0, 
+            0.0, 1.0, 0.0, 1.0, 
+            0.0, 0.0, 1.0, 1.0, 
+        ];
+        let task1_vao: u32 = unsafe { create_vao(&task1_vertices, &task1_indices, &task1_color_vertices) };
+
+        //==============TASK 2==============
+        let task2_vertices: Vec<f32> = vec![
+           -0.8, -0.55, 0.3,
+            0.8, -0.55, 0.3,
+            0.0,  0.85, 0.3,
+            
+           -1.0, -0.9,  0.1,
+            0.6, -0.9,  0.1,
+           -0.2,  0.5,  0.1,
+            
+           -0.6, -0.9,  0.2,
+            1.0, -0.9,  0.2,
+            0.2,  0.5,  0.2,
+        ];
+        let task2_indices: Vec<u32> = vec![
+            0, 1, 2,
+            3, 4, 5,
+            6, 7, 8,
+            
+        ];
+        let task2_color_vertices: Vec<f32> = vec![
+            0.0, 0.0, 1.0, 0.33,
+            0.0, 0.0, 1.0, 0.33,
+            0.0, 0.0, 1.0, 0.33,
+
+            1.0, 0.0, 0.0, 0.33,
+            1.0, 0.0, 0.0, 0.33,
+            1.0, 0.0, 0.0, 0.33,
+            
+            0.0, 1.0, 0.0, 0.33,
+            0.0, 1.0, 0.0, 0.33,
+            0.0, 1.0, 0.0, 0.33,
+        ];
+        let task2_vao: u32 = unsafe { create_vao(&task2_vertices, &task2_indices, &task2_color_vertices) };
 
         
         let shader = unsafe {
@@ -150,9 +238,17 @@ fn main() {
             unsafe {
                 gl::ClearColor(0.163, 0.163, 0.163, 1.0);
                 gl::Clear(gl::COLOR_BUFFER_BIT);
+                gl::Clear(gl::DEPTH_BUFFER_BIT);
 
                 // Issue the necessary commands to draw your scene here
+                
+                //==============TASK 1b==============
+                //gl::BindVertexArray(task1_vao);
+                //gl::DrawElements(gl::TRIANGLES, 18, gl::UNSIGNED_INT, ptr::null());
 
+                //==============TASK 2==============
+                gl::BindVertexArray(task2_vao);
+                gl::DrawElements(gl::TRIANGLES, 9, gl::UNSIGNED_INT, ptr::null());
 
             }
 
