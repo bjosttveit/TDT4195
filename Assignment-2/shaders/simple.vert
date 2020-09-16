@@ -4,7 +4,7 @@ in layout(location=0) vec3 position;
 in layout(location=1) vec4 color;
 
 //Task 3 value
-uniform float value;
+//uniform float value;
 
 //Task 4
 uniform mat4 transformation;
@@ -26,6 +26,9 @@ void main()
         );*/
 
     //Transposing the matrix so that it can be written in the same way as the formulas
-    gl_Position = transpose(transformation) * vec4(position, 1.0);
+    //gl_Position = transpose(transformation) * vec4(position, 1.0);
+
+    //TASK 4
+    gl_Position = transformation * vec4(position, 1.0);
 
 }

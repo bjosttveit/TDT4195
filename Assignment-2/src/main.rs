@@ -197,9 +197,9 @@ fn main() {
 
         //==============TASK 3==============
         let task3_vertices: Vec<f32> = vec![
-                -0.5, -0.5, 0.0,
-                 0.5, -0.5, 0.0,
-                 0.0,  0.5, 0.0,
+            -0.5, -0.5, 0.0,
+            0.5, -0.5, 0.0,
+            0.0,  0.5, 0.0,
         ];
         let task3_indices: Vec<u32> = vec![
             0, 1, 2,
@@ -211,14 +211,6 @@ fn main() {
             0.0, 0.0, 1.0, 1.0,
         ];
         let task3_vao: u32 = unsafe { create_vao(&task3_vertices, &task3_indices, &task3_color_vertices) };
-
-        let task4_transform: Vec<f32> = vec![
-            1.0, 0.0, 0.0, 0.0, 
-            0.0, 1.0, 0.0, 0.0, 
-            0.0, 0.0, 1.0, 0.0, 
-            0.0, 0.0, 0.0, 1.0,
-        ];
-
         
         let shader = unsafe {
             shader::ShaderBuilder::new()
@@ -231,8 +223,11 @@ fn main() {
             gl::UseProgram(shader.program_id);
         }
 
-        // Used to demonstrate keyboard handling -- feel free to remove
-        let mut _arbitrary_number = 0.0;
+
+        //==============TASK 4c==============
+        let (mut x, mut y, mut z, mut a, mut b) = (0.0, 0.0, -2.0, 0.0, 0.0);
+
+
 
         let first_frame_time = std::time::Instant::now();
         let mut last_frame_time = first_frame_time;
@@ -249,11 +244,39 @@ fn main() {
             if let Ok(keys) = pressed_keys.lock() {
                 for key in keys.iter() {
                     match key {
+                        VirtualKeyCode::W => {
+                            z += delta_time;
+                        }
+                        VirtualKeyCode::S => {
+                            z -= delta_time;
+                        }
+
                         VirtualKeyCode::A => {
-                            _arbitrary_number += delta_time;
+                            x += delta_time;
                         }
                         VirtualKeyCode::D => {
-                            _arbitrary_number -= delta_time;
+                            x -= delta_time;
+                        }
+
+                        VirtualKeyCode::Q => {
+                            y += delta_time;
+                        }
+                        VirtualKeyCode::E => {
+                            y -= delta_time;
+                        }
+
+                        VirtualKeyCode::Up => {
+                            a += delta_time;
+                        }
+                        VirtualKeyCode::Down => {
+                            a -= delta_time;
+                        }
+
+                        VirtualKeyCode::Left => {
+                            b += delta_time;
+                        }
+                        VirtualKeyCode::Right => {
+                            b -= delta_time;
                         }
 
                         _ => {}
@@ -262,11 +285,34 @@ fn main() {
             }
 
             unsafe {
-                let value = gl::GetUniformLocation(shader.program_id, CString::new("value").expect("Convert to c-string").as_ptr());
-                gl::Uniform1f(value, elapsed.sin());
+                //TASK 3
+                //let value = gl::GetUniformLocation(shader.program_id, CString::new("value").expect("Convert to c-string").as_ptr());
+                //gl::Uniform1f(value, elapsed.sin());
+                
+                //TASK 4
+                let translate: glm::Mat4 = glm::mat4(
+                    1.0, 0.0, 0.0, x, 
+                    0.0, 1.0, 0.0, y, 
+                    0.0, 0.0, 1.0, z, 
+                    0.0, 0.0, 0.0, 1.0,
+                );
+                let rotatex: glm::Mat4 = glm::mat4(
+                    1.0, 0.0, 0.0, 0.0, 
+                    0.0, a.cos(), -a.sin(), 0.0, 
+                    0.0, a.sin(), a.cos(), 0.0, 
+                    0.0, 0.0, 0.0, 1.0,
+                );
+                let rotatey: glm::Mat4 = glm::mat4(
+                    b.cos(), 0.0, b.sin(), 0.0, 
+                    0.0, 1.0, 0.0, 0.0, 
+                    -b.sin(), 0.0, b.cos(), 0.0, 
+                    0.0, 0.0, 0.0, 1.0,
+                );
+                let perspective_transform: glm::Mat4 = glm::perspective(1.0, 1.0, 1.0, 100.0);
 
                 let transformation = gl::GetUniformLocation(shader.program_id, CString::new("transformation").expect("Convert to c-string").as_ptr());
-                gl::UniformMatrix4fv(transformation, 1, 0, task4_transform.as_ptr());
+                gl::UniformMatrix4fv(transformation, 1, 0, (perspective_transform * rotatex * rotatey * translate).as_ptr());
+
 
                 gl::ClearColor(0.163, 0.163, 0.163, 1.0);
                 gl::Clear(gl::COLOR_BUFFER_BIT);
