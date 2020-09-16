@@ -265,17 +265,17 @@ fn main() {
                             y -= delta_time;
                         }
 
-                        VirtualKeyCode::Up => {
+                        VirtualKeyCode::Down => {
                             a += delta_time;
                         }
-                        VirtualKeyCode::Down => {
+                        VirtualKeyCode::Up => {
                             a -= delta_time;
                         }
 
-                        VirtualKeyCode::Left => {
+                        VirtualKeyCode::Right => {
                             b += delta_time;
                         }
-                        VirtualKeyCode::Right => {
+                        VirtualKeyCode::Left => {
                             b -= delta_time;
                         }
 
