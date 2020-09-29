@@ -7,6 +7,7 @@ use std::{mem, os::raw::c_void, ptr, str, ffi::CString};
 mod shader;
 mod util;
 mod mesh;
+mod scene_graph;
 
 use glutin::event::{
     ElementState::{Pressed, Released},
@@ -95,6 +96,19 @@ unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>, vertex_colors: &Ve
     return array_id;
 }
 
+unsafe fn draw_scene(root: &scene_graph::SceneNode, view_projection_matrix: &glm::Mat4) {
+    // Check if node is drawable, set uniforms, draw
+    if (root.index_count > 0) {
+        gl::BindVertexArray(root.vao_id);
+        gl::DrawElements(gl::TRIANGLES, root.index_count, gl::UNSIGNED_INT, ptr::null());
+    }
+
+    // Recurse
+    for &child in &root.children {
+        draw_scene(&*child, view_projection_matrix);
+    }
+}
+
 fn main() {
     // Set up the necessary objects to deal with windows and event handling
     let el = glutin::event_loop::EventLoop::new();
@@ -134,6 +148,38 @@ fn main() {
         
         let terrain = mesh::Terrain::load("./resources/lunarsurface.obj");
         let terrainVAO = unsafe { create_vao(&terrain.vertices, &terrain.indices, &terrain.colors, &terrain.normals) };
+
+        let helicopter = mesh::Helicopter::load("./resources/helicopter.obj");
+        let hBodyVao = unsafe { create_vao(&helicopter.body.vertices, &helicopter.body.indices, &helicopter.body.colors, &helicopter.body.normals) };
+        let hMainVao = unsafe { create_vao(&helicopter.main_rotor.vertices, &helicopter.main_rotor.indices, &helicopter.main_rotor.colors, &helicopter.main_rotor.normals) };
+        let hTailVao = unsafe { create_vao(&helicopter.tail_rotor.vertices, &helicopter.tail_rotor.indices, &helicopter.tail_rotor.colors, &helicopter.tail_rotor.normals) };
+        let hDoorVao = unsafe { create_vao(&helicopter.door.vertices, &helicopter.door.indices, &helicopter.door.colors, &helicopter.door.normals) };
+
+        //Scene graph
+        //Define nodes
+
+        let mut globalRootNode = scene_graph::SceneNode::new();
+
+        let mut terrainNode = scene_graph::SceneNode::from_vao(terrainVAO, terrain.index_count);
+
+        let mut helicopterRootNode = scene_graph::SceneNode::new();
+        let hBodyNode = scene_graph::SceneNode::from_vao(hBodyVao, helicopter.body.index_count);
+        let hMainNode = scene_graph::SceneNode::from_vao(hMainVao, helicopter.main_rotor.index_count);
+        let hTailNode = scene_graph::SceneNode::from_vao(hTailVao, helicopter.tail_rotor.index_count);
+        let hDoorNode = scene_graph::SceneNode::from_vao(hDoorVao, helicopter.door.index_count);
+
+        //Connect nodes
+        globalRootNode.add_child(&terrainNode);
+        terrainNode.add_child(&helicopterRootNode);
+
+        helicopterRootNode.add_child(&hBodyNode);
+        helicopterRootNode.add_child(&hMainNode);
+        helicopterRootNode.add_child(&hTailNode);
+        helicopterRootNode.add_child(&hDoorNode);
+
+        //Initialize positions
+        //helicopterRootNode.position = glm::vec3(1000.0, 1000.0, 1000.0);
+
         
         let shader = unsafe {
             shader::ShaderBuilder::new()
@@ -149,7 +195,7 @@ fn main() {
 
         //Camera variables
         let (mut x, mut y, mut z, mut a, mut b) = (0.0, 0.0, -2.0, 0.0, 0.0);
-        let speed = 100.0;
+        let speed = 10.0;
 
 
         let first_frame_time = std::time::Instant::now();
@@ -229,8 +275,10 @@ fn main() {
                 );
                 let perspective_transform: glm::Mat4 = glm::perspective(1.0, 1.0, 1.0, 2000.0);
 
+                let transformationMatrix: glm::Mat4 = perspective_transform * rotatex * rotatey * translate;
+
                 let transformation = gl::GetUniformLocation(shader.program_id, CString::new("transformation").expect("Convert to c-string").as_ptr());
-                gl::UniformMatrix4fv(transformation, 1, 0, (perspective_transform * rotatex * rotatey * translate).as_ptr());
+                gl::UniformMatrix4fv(transformation, 1, 0, transformationMatrix.as_ptr());
 
 
                 gl::ClearColor(0.163, 0.163, 0.163, 1.0);
@@ -238,8 +286,7 @@ fn main() {
                 gl::Clear(gl::DEPTH_BUFFER_BIT);
 
                 // Issue the necessary commands to draw your scene here
-                gl::BindVertexArray(terrainVAO);
-                gl::DrawElements(gl::TRIANGLES, terrain.index_count, gl::UNSIGNED_INT, ptr::null());
+                draw_scene(&globalRootNode, &transformationMatrix);
                 
             }
 
