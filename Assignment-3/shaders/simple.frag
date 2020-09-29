@@ -3,9 +3,15 @@
 out vec4 color;
   
 in vec4 vertexColor;
+in vec3 vertexNormals;
 
-//==============TASK 1aii==============
+vec3 lightDirection = normalize(vec3(0.8, -0.5,0.6));
+
 void main()
 {
-    color = vertexColor;
+    //Task 1c
+    //color = vec4(vertexNormals, 1.0f);
+
+    //Task 1d
+    color = vec4(vertexColor.xyz*max(0, dot(vertexNormals, -lightDirection)), vertexColor.w);
 }
