@@ -8,6 +8,7 @@ mod shader;
 mod util;
 mod mesh;
 mod scene_graph;
+mod toolbox;
 
 use glutin::event::{
     ElementState::{Pressed, Released},
@@ -99,6 +100,8 @@ unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>, vertex_colors: &Ve
 unsafe fn draw_scene(root: &scene_graph::SceneNode, view_projection_matrix: &glm::Mat4) {
     // Check if node is drawable, set uniforms, draw
     if (root.index_count > 0) {
+        gl::UniformMatrix4fv(3, 1, 0, (view_projection_matrix * root.current_transformation_matrix).as_ptr());
+        gl::UniformMatrix4fv(4, 1, 0, (root.current_transformation_matrix).as_ptr());
         gl::BindVertexArray(root.vao_id);
         gl::DrawElements(gl::TRIANGLES, root.index_count, gl::UNSIGNED_INT, ptr::null());
     }
@@ -106,6 +109,60 @@ unsafe fn draw_scene(root: &scene_graph::SceneNode, view_projection_matrix: &glm
     // Recurse
     for &child in &root.children {
         draw_scene(&*child, view_projection_matrix);
+    }
+}
+
+unsafe fn update_node_transformations(root:&mut scene_graph::SceneNode, transformation_so_far: &glm::Mat4) {
+    
+    // Construct the correct transformation matrix
+    let origin = glm::mat4(
+        1.0, 0.0, 0.0, root.reference_point[0],
+        0.0, 1.0, 0.0, root.reference_point[1],
+        0.0, 0.0, 1.0, root.reference_point[2],
+        0.0, 0.0, 0.0, 1.0,
+    );
+
+    let rotateX = glm::mat4(
+        1.0, 0.0, 0.0, 0.0,
+        0.0, root.rotation[0].cos(), -root.rotation[0].sin(), 0.0,
+        0.0, root.rotation[0].sin(), root.rotation[0].cos(), 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    );
+
+    let rotateY = glm::mat4(
+        root.rotation[1].cos(), 0.0, root.rotation[1].sin(), 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        -root.rotation[1].sin(), 0.0, root.rotation[1].cos(), 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    );
+
+    let rotateZ = glm::mat4(
+        root.rotation[2].cos(), -root.rotation[2].sin(), 0.0, 0.0,
+        root.rotation[2].sin(), root.rotation[2].cos(), 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    );
+
+    let notorigin = glm::mat4(
+        1.0, 0.0, 0.0, -root.reference_point[0],
+        0.0, 1.0, 0.0, -root.reference_point[1],
+        0.0, 0.0, 1.0, -root.reference_point[2],
+        0.0, 0.0, 0.0, 1.0,
+    );
+
+    let translation = glm::mat4(
+        1.0, 0.0, 0.0, root.position[0],
+        0.0, 1.0, 0.0, root.position[1],
+        0.0, 0.0, 1.0, root.position[2],
+        0.0, 0.0, 0.0, 1.0,
+    );
+
+    // Update the node's transformation matrix
+    root.current_transformation_matrix = transformation_so_far * translation * origin * rotateX * rotateY * rotateZ * notorigin;
+
+    // Recurse
+    for &child in &root.children {
+        update_node_transformations(&mut *child, &root.current_transformation_matrix);
     }
 }
 
@@ -163,10 +220,11 @@ fn main() {
         let mut terrainNode = scene_graph::SceneNode::from_vao(terrainVAO, terrain.index_count);
 
         let mut helicopterRootNode = scene_graph::SceneNode::new();
-        let hBodyNode = scene_graph::SceneNode::from_vao(hBodyVao, helicopter.body.index_count);
-        let hMainNode = scene_graph::SceneNode::from_vao(hMainVao, helicopter.main_rotor.index_count);
-        let hTailNode = scene_graph::SceneNode::from_vao(hTailVao, helicopter.tail_rotor.index_count);
-        let hDoorNode = scene_graph::SceneNode::from_vao(hDoorVao, helicopter.door.index_count);
+        //helicopterRootNode.position = glm::vec3(10.0, 10.0, 10.0);
+        let mut hBodyNode = scene_graph::SceneNode::from_vao(hBodyVao, helicopter.body.index_count);
+        let mut hMainNode = scene_graph::SceneNode::from_vao(hMainVao, helicopter.main_rotor.index_count);
+        let mut hTailNode = scene_graph::SceneNode::from_vao(hTailVao, helicopter.tail_rotor.index_count);
+        let mut hDoorNode = scene_graph::SceneNode::from_vao(hDoorVao, helicopter.door.index_count);
 
         //Connect nodes
         globalRootNode.add_child(&terrainNode);
@@ -178,8 +236,7 @@ fn main() {
         helicopterRootNode.add_child(&hDoorNode);
 
         //Initialize positions
-        //helicopterRootNode.position = glm::vec3(1000.0, 1000.0, 1000.0);
-
+        hTailNode.reference_point = glm::vec3(0.35, 2.3, 10.4);
         
         let shader = unsafe {
             shader::ShaderBuilder::new()
@@ -207,7 +264,16 @@ fn main() {
             let delta_time = now.duration_since(last_frame_time).as_secs_f32();
             last_frame_time = now;
 
+            //============================ Helicopter animation ============================
+            hMainNode.rotation[1] = elapsed*20.0;
+            hTailNode.rotation[0] = elapsed*20.0;
             
+            let animation = toolbox::simple_heading_animation(elapsed);
+            helicopterRootNode.position[0] = animation.x;
+            helicopterRootNode.position[2] = animation.z;
+            helicopterRootNode.rotation[0] = animation.pitch;
+            helicopterRootNode.rotation[1] = animation.yaw;
+            helicopterRootNode.rotation[2] = animation.roll;
 
             // Handle keyboard input
             if let Ok(keys) = pressed_keys.lock() {
@@ -247,6 +313,24 @@ fn main() {
                         VirtualKeyCode::Left => {
                             b -= delta_time;
                         }
+                        VirtualKeyCode::Numpad8 => {
+                            helicopterRootNode.position[2] -= delta_time * speed;
+                        }
+                        VirtualKeyCode::Numpad2 => {
+                            helicopterRootNode.position[2] += delta_time * speed;
+                        }
+                        VirtualKeyCode::Numpad4 => {
+                            helicopterRootNode.position[0] -= delta_time * speed;
+                        }
+                        VirtualKeyCode::Numpad6 => {
+                            helicopterRootNode.position[0] += delta_time * speed;
+                        }
+                        VirtualKeyCode::Numpad9 => {
+                            helicopterRootNode.position[1] += delta_time * speed;
+                        }
+                        VirtualKeyCode::Numpad3 => {
+                            helicopterRootNode.position[1] -= delta_time * speed;
+                        }
 
                         _ => {}
                     }
@@ -275,18 +359,15 @@ fn main() {
                 );
                 let perspective_transform: glm::Mat4 = glm::perspective(1.0, 1.0, 1.0, 2000.0);
 
-                let transformationMatrix: glm::Mat4 = perspective_transform * rotatex * rotatey * translate;
-
-                let transformation = gl::GetUniformLocation(shader.program_id, CString::new("transformation").expect("Convert to c-string").as_ptr());
-                gl::UniformMatrix4fv(transformation, 1, 0, transformationMatrix.as_ptr());
-
+                let viewProjectionMatrix: glm::Mat4 = perspective_transform * rotatex * rotatey * translate;
 
                 gl::ClearColor(0.163, 0.163, 0.163, 1.0);
                 gl::Clear(gl::COLOR_BUFFER_BIT);
                 gl::Clear(gl::DEPTH_BUFFER_BIT);
 
                 // Issue the necessary commands to draw your scene here
-                draw_scene(&globalRootNode, &transformationMatrix);
+                update_node_transformations(&mut globalRootNode, &glm::identity());
+                draw_scene(&globalRootNode, &viewProjectionMatrix);
                 
             }
 
