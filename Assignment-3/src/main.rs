@@ -215,28 +215,42 @@ fn main() {
         //Scene graph
         //Define nodes
 
+        const numHelicopters: usize = 5;
+
         let mut globalRootNode = scene_graph::SceneNode::new();
 
         let mut terrainNode = scene_graph::SceneNode::from_vao(terrainVAO, terrain.index_count);
 
-        let mut helicopterRootNode = scene_graph::SceneNode::new();
-        //helicopterRootNode.position = glm::vec3(10.0, 10.0, 10.0);
-        let mut hBodyNode = scene_graph::SceneNode::from_vao(hBodyVao, helicopter.body.index_count);
-        let mut hMainNode = scene_graph::SceneNode::from_vao(hMainVao, helicopter.main_rotor.index_count);
-        let mut hTailNode = scene_graph::SceneNode::from_vao(hTailVao, helicopter.tail_rotor.index_count);
-        let mut hDoorNode = scene_graph::SceneNode::from_vao(hDoorVao, helicopter.door.index_count);
-
         //Connect nodes
         globalRootNode.add_child(&terrainNode);
-        terrainNode.add_child(&helicopterRootNode);
 
-        helicopterRootNode.add_child(&hBodyNode);
-        helicopterRootNode.add_child(&hMainNode);
-        helicopterRootNode.add_child(&hTailNode);
-        helicopterRootNode.add_child(&hDoorNode);
+        let mut helicopterNodes = Vec::with_capacity(5 * numHelicopters);
 
-        //Initialize positions
-        hTailNode.reference_point = glm::vec3(0.35, 2.3, 10.4);
+        //helicopters
+        for i in 0..numHelicopters {
+            let mut helicopterRootNode = scene_graph::SceneNode::new();
+            let mut hBodyNode = scene_graph::SceneNode::from_vao(hBodyVao, helicopter.body.index_count);
+            let mut hMainNode = scene_graph::SceneNode::from_vao(hMainVao, helicopter.main_rotor.index_count);
+            let mut hTailNode = scene_graph::SceneNode::from_vao(hTailVao, helicopter.tail_rotor.index_count);
+            let mut hDoorNode = scene_graph::SceneNode::from_vao(hDoorVao, helicopter.door.index_count);
+            
+            terrainNode.add_child(&helicopterRootNode);
+
+            helicopterRootNode.add_child(&hBodyNode);
+            helicopterRootNode.add_child(&hMainNode);
+            helicopterRootNode.add_child(&hTailNode);
+            helicopterRootNode.add_child(&hDoorNode);
+
+            //Tail rotor origin
+            hTailNode.reference_point = glm::vec3(0.35, 2.3, 10.4);
+
+            helicopterNodes.push(helicopterRootNode);
+            helicopterNodes.push(hBodyNode);
+            helicopterNodes.push(hMainNode);
+            helicopterNodes.push(hTailNode);
+            helicopterNodes.push(hDoorNode);
+        }
+
         
         let shader = unsafe {
             shader::ShaderBuilder::new()
@@ -252,7 +266,7 @@ fn main() {
 
         //Camera variables
         let (mut x, mut y, mut z, mut a, mut b) = (0.0, 0.0, -2.0, 0.0, 0.0);
-        let speed = 10.0;
+        let speed = 100.0;
 
 
         let first_frame_time = std::time::Instant::now();
@@ -265,15 +279,17 @@ fn main() {
             last_frame_time = now;
 
             //============================ Helicopter animation ============================
-            hMainNode.rotation[1] = elapsed*20.0;
-            hTailNode.rotation[0] = elapsed*20.0;
-            
-            let animation = toolbox::simple_heading_animation(elapsed);
-            helicopterRootNode.position[0] = animation.x;
-            helicopterRootNode.position[2] = animation.z;
-            helicopterRootNode.rotation[0] = animation.pitch;
-            helicopterRootNode.rotation[1] = animation.yaw;
-            helicopterRootNode.rotation[2] = animation.roll;
+            for i in 0..numHelicopters {
+                helicopterNodes[i*5+2].rotation[1] = elapsed*20.0;
+                helicopterNodes[i*5+3].rotation[0] = elapsed*20.0;
+                
+                let animation = toolbox::simple_heading_animation(elapsed + 0.75*(i as f32));
+                helicopterNodes[i*5].position[0] = animation.x;
+                helicopterNodes[i*5].position[2] = animation.z;
+                helicopterNodes[i*5].rotation[0] = animation.pitch;
+                helicopterNodes[i*5].rotation[1] = animation.yaw;
+                helicopterNodes[i*5].rotation[2] = animation.roll;
+            }
 
             // Handle keyboard input
             if let Ok(keys) = pressed_keys.lock() {
@@ -313,25 +329,6 @@ fn main() {
                         VirtualKeyCode::Left => {
                             b -= delta_time;
                         }
-                        VirtualKeyCode::Numpad8 => {
-                            helicopterRootNode.position[2] -= delta_time * speed;
-                        }
-                        VirtualKeyCode::Numpad2 => {
-                            helicopterRootNode.position[2] += delta_time * speed;
-                        }
-                        VirtualKeyCode::Numpad4 => {
-                            helicopterRootNode.position[0] -= delta_time * speed;
-                        }
-                        VirtualKeyCode::Numpad6 => {
-                            helicopterRootNode.position[0] += delta_time * speed;
-                        }
-                        VirtualKeyCode::Numpad9 => {
-                            helicopterRootNode.position[1] += delta_time * speed;
-                        }
-                        VirtualKeyCode::Numpad3 => {
-                            helicopterRootNode.position[1] -= delta_time * speed;
-                        }
-
                         _ => {}
                     }
                 }
